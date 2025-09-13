@@ -14,7 +14,7 @@
         "spatie/laravel-permission": "^6.0",
         "spatie/laravel-activitylog": "^4.7",
         "spatie/laravel-backup": "^8.0",
-        "spatie/laravel-medialibrary": "^10.0",
+        "spatie/laravel-medialibrary": "^11.0",
         "spatie/laravel-query-builder": "^5.0",
         "spatie/laravel-sluggable": "^3.5",
         "spatie/laravel-translatable": "^6.0",
@@ -33,7 +33,6 @@
         "vlucas/phpdotenv": "^5.5",
         "doctrine/dbal": "^3.7",
         "temporal/sdk": "^1.0",
-        "rdkafka/rdkafka": "^6.0",
         "elasticsearch/elasticsearch": "^8.0",
         "aws/aws-sdk-php": "^3.0",
         "google/cloud-storage": "^1.0",
@@ -55,15 +54,12 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel/pint": "^1.13",
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.0",
-        "phpunit/phpunit": "^11.0",
         "spatie/laravel-ignition": "^2.4",
         "laravel/telescope": "^5.0",
-        "barryvdh/laravel-debugbar": "^3.9",
-        "barryvdh/laravel-ide-helper": "^2.13"
+        "barryvdh/laravel-debugbar": "^3.9"
     },
     "autoload": {
         "psr-4": {
