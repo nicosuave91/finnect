@@ -1,3 +1,4 @@
+import { ref, computed, readonly } from 'vue'
 import { defineStore } from 'pinia'
 import type { User, LoginCredentials, RegisterData } from '~/types'
 
@@ -245,6 +246,12 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
+
+  const setAuth = (userData: User, authToken: string) => {
+    user.value = userData
+    token.value = authToken
+  }
+
   return {
     // State
     user: readonly(user),
@@ -269,6 +276,8 @@ export const useAuthStore = defineStore('auth', () => {
     changePassword,
     forgotPassword,
     resetPassword,
+    setAuth,
+
     clearError
   }
 })

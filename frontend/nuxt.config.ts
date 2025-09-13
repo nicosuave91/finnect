@@ -1,3 +1,4 @@
+export default defineNuxtConfig({})
 export default defineNuxtConfig({
   devtools: { enabled: true },
   
