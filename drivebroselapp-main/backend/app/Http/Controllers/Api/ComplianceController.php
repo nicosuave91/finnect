@@ -22,6 +22,8 @@ class ComplianceController extends Controller
      */
     public function getRegulations(): JsonResponse
     {
+
+        $regulations = $this->complianceService->getRegulations();
         $regulations = [
             [
                 'code' => 'TRID',
@@ -322,4 +324,30 @@ class ComplianceController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Trigger remediation for a violation.
+     */
+    public function triggerRemediation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'entity_type' => 'required|string',
+            'entity_id' => 'required|integer',
+            'regulation' => 'required|string',
+            'rule_id' => 'required|string',
+        ]);
+
+        $result = $this->complianceService->triggerRemediation(
+            $validated['entity_type'],
+            $validated['entity_id'],
+            $validated['regulation'],
+            $validated['rule_id']
+        );
+
+        return response()->json([
+            'message' => 'Remediation triggered successfully',
+            'data' => $result,
+        ]);
+    }
+
 }
