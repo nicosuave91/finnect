@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use App\Support\TenantMigrate;
 
+
 return new class extends Migration
 {
     /**
@@ -47,6 +48,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('DROP POLICY IF EXISTS tenant_isolation ON users;');
             DB::statement('ALTER TABLE users DISABLE ROW LEVEL SECURITY;');
