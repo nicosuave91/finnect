@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Finnect API
+  version: '1.0'
+servers:
+  - url: https://api.finnect.local
+paths:
+  /api/loans:
+    get:
+      summary: List loans
+      responses:
+        '200':
+          description: Loan list
+    post:
+      summary: Create loan
+      responses:
+        '201':
+          description: Loan created
+  /api/loans/{loanId}/compliance-check:
+    post:
+      summary: Run compliance checks
+      parameters:
+        - in: path
+          name: loanId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Compliance result
+  /api/integrations/{integration}/sync:
+    post:
+      summary: Trigger integration sync
+      parameters:
+        - in: path
+          name: integration
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Integration result
