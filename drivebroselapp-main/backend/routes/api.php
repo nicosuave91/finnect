@@ -37,6 +37,8 @@ Route::middleware(['auth:sanctum', 'tenant', 'compliance'])->group(function () {
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
     // Loan management routes
+
+    Route::get('/loans/stream', [LoanController::class, 'stream']);
     Route::apiResource('loans', LoanController::class);
     Route::post('/loans/{loan}/status', [LoanController::class, 'updateStatus']);
     Route::post('/loans/{loan}/compliance-check', [LoanController::class, 'runComplianceCheck']);

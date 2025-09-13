@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 
+use Illuminate\Support\Facades\Redis;
+
+
 class LoanController extends Controller
 {
     protected $complianceService;
@@ -175,6 +178,14 @@ class LoanController extends Controller
         // Update workflow if needed
         $this->workflowService->updateWorkflowForStatus($loan, $validated['status']);
 
+
+        // Broadcast status change
+        Redis::publish('loan-status', json_encode([
+            'loan_id' => $loan->id,
+            'status' => $validated['status'],
+        ]));
+
+
         return response()->json([
             'loan' => $loan->fresh(),
             'message' => 'Status updated successfully',
@@ -182,6 +193,29 @@ class LoanController extends Controller
     }
 
     /**
+
+     * Stream loan status events via Server-Sent Events.
+     */
+    public function stream()
+    {
+        return response()->stream(function () {
+            Redis::subscribe(['loan-status'], function ($message) {
+                echo "event: loan-status\n";
+                echo "data: {$message}\n\n";
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
+            });
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+        ]);
+    }
+
+    /**
+
      * Run compliance check for loan.
      */
     public function runComplianceCheck(Loan $loan): JsonResponse

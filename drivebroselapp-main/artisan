@@ -1,0 +1,10 @@
+#!/usr/bin/env php
+<?php
+require __DIR__.'/vendor/autoload.php';
+$command = $argv[1] ?? null;
+if ($command === 'test') {
+    passthru('vendor/bin/phpunit');
+    exit(0);
+}
+echo "Unknown command: {$command}\n";
+exit(1);
