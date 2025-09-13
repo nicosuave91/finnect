@@ -7,6 +7,7 @@ use App\Services\ComplianceService;
 use App\Models\ComplianceAudit;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class ComplianceController extends Controller
 {
@@ -14,6 +15,7 @@ class ComplianceController extends Controller
 
     public function __construct(ComplianceService $complianceService)
     {
+        $this->middleware('auth:sanctum');
         $this->complianceService = $complianceService;
     }
 
@@ -22,83 +24,12 @@ class ComplianceController extends Controller
      */
     public function getRegulations(): JsonResponse
     {
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
 
-        $regulations = $this->complianceService->getRegulations();
-        $regulations = [
-            [
-                'code' => 'TRID',
-                'name' => 'TRID (TILA-RESPA Integrated Disclosure)',
-                'description' => 'Truth in Lending Act and Real Estate Settlement Procedures Act',
-                'requirements' => [
-                    'loan_estimate' => 'Loan Estimate must be provided within 3 business days',
-                    'closing_disclosure' => 'Closing Disclosure must be provided 3 business days before closing',
-                    'intent_to_proceed' => 'Intent to Proceed must be obtained before proceeding'
-                ]
-            ],
-            [
-                'code' => 'ECOA',
-                'name' => 'ECOA (Equal Credit Opportunity Act)',
-                'description' => 'Prohibits discrimination in credit transactions',
-                'requirements' => [
-                    'adverse_action_notice' => 'Adverse Action Notice required for denials',
-                    'equal_credit_opportunity_notice' => 'Equal Credit Opportunity Notice required',
-                    'prohibited_information' => 'Cannot collect prohibited information for credit decisions'
-                ]
-            ],
-            [
-                'code' => 'RESPA',
-                'name' => 'RESPA (Real Estate Settlement Procedures Act)',
-                'description' => 'Regulates real estate settlement services',
-                'requirements' => [
-                    'good_faith_estimate' => 'Good Faith Estimate required',
-                    'hud1_settlement_statement' => 'HUD-1 Settlement Statement required',
-                    'servicing_disclosure' => 'Servicing Disclosure required',
-                    'no_kickbacks' => 'No kickbacks or referral fees allowed'
-                ]
-            ],
-            [
-                'code' => 'GLBA',
-                'name' => 'GLBA (Gramm-Leach-Bliley Act)',
-                'description' => 'Protects consumer financial information',
-                'requirements' => [
-                    'privacy_notice' => 'Privacy notice must be provided to customers',
-                    'opt_out_mechanism' => 'Opt-out mechanism for information sharing',
-                    'data_protection' => 'Adequate data protection measures required'
-                ]
-            ],
-            [
-                'code' => 'FCRA',
-                'name' => 'FCRA (Fair Credit Reporting Act)',
-                'description' => 'Regulates consumer credit reporting',
-                'requirements' => [
-                    'adverse_action_notice' => 'Adverse Action Notice required for credit denials',
-                    'risk_based_pricing_notice' => 'Risk-Based Pricing Notice required',
-                    'credit_report_accuracy' => 'Credit report accuracy requirements'
-                ]
-            ],
-            [
-                'code' => 'AML_BSA',
-                'name' => 'AML/BSA (Anti-Money Laundering/Bank Secrecy Act)',
-                'description' => 'Prevents money laundering and terrorist financing',
-                'requirements' => [
-                    'suspicious_activity_monitoring' => 'Suspicious activity monitoring required',
-                    'customer_due_diligence' => 'Customer Due Diligence required',
-                    'suspicious_activity_reports' => 'Suspicious Activity Reports when required'
-                ]
-            ],
-            [
-                'code' => 'SAFE_ACT',
-                'name' => 'SAFE Act (Secure and Fair Enforcement)',
-                'description' => 'Regulates mortgage loan originators',
-                'requirements' => [
-                    'nmls_licensing' => 'NMLS licensing required for loan originators',
-                    'background_checks' => 'Background checks required',
-                    'continuing_education' => 'Continuing education requirements'
-                ]
-            ]
-        ];
-
-        return response()->json(['data' => $regulations]);
+        return response()->json(['data' => $this->complianceService->getSupportedRegulations()]);
     }
 
     /**
@@ -106,6 +37,11 @@ class ComplianceController extends Controller
      */
     public function getViolations(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $query = ComplianceAudit::where('audit_type', 'compliance_violation');
 
         // Apply filters
@@ -137,6 +73,10 @@ class ComplianceController extends Controller
      */
     public function getAuditTrail(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
         $query = ComplianceAudit::query();
 
         // Apply filters
@@ -172,6 +112,10 @@ class ComplianceController extends Controller
      */
     public function generateReport(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
         $validated = $request->validate([
             'report_type' => 'required|string|in:summary,detailed,violations,audit_trail',
             'date_from' => 'required|date',
@@ -199,6 +143,10 @@ class ComplianceController extends Controller
      */
     public function downloadReport(string $reportId): JsonResponse
     {
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
         $report = $this->complianceService->getReport($reportId);
 
         if (!$report) {
@@ -217,6 +165,10 @@ class ComplianceController extends Controller
      */
     public function getDashboardData(): JsonResponse
     {
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
         $data = [
             'total_violations' => ComplianceAudit::where('audit_type', 'compliance_violation')
                 ->where('created_at', '>=', now()->subDays(30))
@@ -250,6 +202,10 @@ class ComplianceController extends Controller
      */
     public function getEntityComplianceSummary(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
         $validated = $request->validate([
             'entity_type' => 'required|string',
             'entity_id' => 'required|integer'
@@ -268,6 +224,10 @@ class ComplianceController extends Controller
      */
     public function updateComplianceSettings(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin'])) {
+            abort(403, 'Unauthorized');
+        }
         $validated = $request->validate([
             'regulation' => 'required|string',
             'settings' => 'required|array'
@@ -294,6 +254,10 @@ class ComplianceController extends Controller
      */
     public function getComplianceRequirements(string $regulation): JsonResponse
     {
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
         $requirements = $this->complianceService->getComplianceRequirements($regulation);
 
         return response()->json(['data' => $requirements]);
@@ -304,6 +268,10 @@ class ComplianceController extends Controller
      */
     public function validateCompliance(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
         $validated = $request->validate([
             'entity_type' => 'required|string',
             'entity_id' => 'required|integer',
@@ -324,30 +292,4 @@ class ComplianceController extends Controller
             ]
         ]);
     }
-
-    /**
-     * Trigger remediation for a violation.
-     */
-    public function triggerRemediation(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'entity_type' => 'required|string',
-            'entity_id' => 'required|integer',
-            'regulation' => 'required|string',
-            'rule_id' => 'required|string',
-        ]);
-
-        $result = $this->complianceService->triggerRemediation(
-            $validated['entity_type'],
-            $validated['entity_id'],
-            $validated['regulation'],
-            $validated['rule_id']
-        );
-
-        return response()->json([
-            'message' => 'Remediation triggered successfully',
-            'data' => $result,
-        ]);
-    }
-
 }
