@@ -47,22 +47,13 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true
       error.value = null
 
-
-      const response = await $fetch<{ user: User; token: string }>('/api/auth/login', {
-
       const { data } = await $fetch<{ data: { user: User; token: string } }>('/api/auth/login', {
-
         method: 'POST',
         body: credentials
       })
 
-
-      user.value = response.user
-      token.value = response.token
-
       user.value = data.user
       token.value = data.token
-
 
       // Set cookie
       const authCookie = useCookie('auth_token', {
@@ -70,19 +61,11 @@ export const useAuthStore = defineStore('auth', () => {
         secure: true,
         sameSite: 'strict'
       })
-
-      authCookie.value = response.token
-
-      // Set default headers
-      const { $api } = useNuxtApp()
-      $api.setAuthToken(response.token)
-
       authCookie.value = data.token
 
       // Set default headers
       const { $api } = useNuxtApp()
       $api.setAuthToken(data.token)
-
 
       return { success: true }
     } catch (err: any) {
@@ -98,22 +81,13 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true
       error.value = null
 
-
-      const response = await $fetch<{ user: User; token: string }>('/api/auth/register', {
-
       const response = await $fetch<{ data: { user: User; token: string } }>('/api/auth/register', {
-
         method: 'POST',
         body: data
       })
 
-
-      user.value = response.user
-      token.value = response.token
-
       user.value = response.data.user
       token.value = response.data.token
-
 
       // Set cookie
       const authCookie = useCookie('auth_token', {
@@ -121,19 +95,11 @@ export const useAuthStore = defineStore('auth', () => {
         secure: true,
         sameSite: 'strict'
       })
-
-      authCookie.value = response.token
-
-      // Set default headers
-      const { $api } = useNuxtApp()
-      $api.setAuthToken(response.token)
-
       authCookie.value = response.data.token
 
       // Set default headers
       const { $api } = useNuxtApp()
       $api.setAuthToken(response.data.token)
-
 
       return { success: true }
     } catch (err: any) {
@@ -179,21 +145,13 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       if (!token.value) return
 
-
-      const response = await $fetch<{ user: User }>('/api/auth/me', {
-
       const { data } = await $fetch<{ data: User }>('/api/auth/me', {
-
         headers: {
           Authorization: `Bearer ${token.value}`
         }
       })
 
-
-      user.value = response.user
-
       user.value = data
-
     } catch (err) {
       console.error('Failed to fetch user:', err)
       logout()
@@ -205,19 +163,13 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true
       error.value = null
 
-
-      const response = await $fetch<{ user: User }>('/api/auth/profile', {
-
       const { data } = await $fetch<{ data: User }>('/api/auth/profile', {
-
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token.value}`
         },
         body: profileData
       })
-
-      user.value = response.user
 
       user.value = data
       return { success: true }
