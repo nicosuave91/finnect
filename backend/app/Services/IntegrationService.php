@@ -7,33 +7,11 @@ use App\Models\ComplianceAudit;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-
-use App\Services\Integrations\BaseIntegrationClient;
-use App\Services\Integrations\PlaidClient;
-use App\Services\Integrations\TrueworkClient;
-use App\Services\Integrations\DUClient;
-use App\Services\Integrations\LPClient;
-use App\Services\Integrations\FhaTotalClient;
-use App\Services\Integrations\SnapdocsClient;
-use App\Services\Integrations\IntegrationException;
-
+use Illuminate\Support\Facades\Crypt;
 
 class IntegrationService
 {
     /**
-     * Mapping of vendor keys to client classes.
-     */
-    protected array $integrationClients = [
-        'plaid' => PlaidClient::class,
-        'truework' => TrueworkClient::class,
-        'du' => DUClient::class,
-        'lp' => LPClient::class,
-        'fha_total' => FhaTotalClient::class,
-        'snapdocs' => SnapdocsClient::class,
-    ];
-
-    /**
-
      * Available integrations.
      */
     private $integrations = [
@@ -180,6 +158,54 @@ class IntegrationService
                 'required_fields' => ['loan_data'],
                 'compliance' => ['TRID', 'ECOA', 'RESPA', 'GLBA', 'FCRA']
             ]
+        ],
+        'voa_voe' => [
+            'plaid' => [
+                'name' => 'Plaid',
+                'type' => 'asset_verification',
+                'endpoint' => 'https://api.plaid.com',
+                'required_fields' => ['account_id', 'access_token'],
+                'compliance' => ['GLBA']
+            ],
+            'truework' => [
+                'name' => 'Truework',
+                'type' => 'employment_verification',
+                'endpoint' => 'https://api.truework.com',
+                'required_fields' => ['ssn', 'employer_name'],
+                'compliance' => ['ECOA']
+            ]
+        ],
+        'aus_systems' => [
+            'desktop_underwriter' => [
+                'name' => 'Desktop Underwriter',
+                'type' => 'aus',
+                'endpoint' => 'https://api.desktopunderwriter.com',
+                'required_fields' => ['loan_data'],
+                'compliance' => ['TRID', 'ECOA', 'RESPA']
+            ],
+            'loan_prospector' => [
+                'name' => 'Loan Prospector',
+                'type' => 'aus',
+                'endpoint' => 'https://api.loanprospector.com',
+                'required_fields' => ['loan_data'],
+                'compliance' => ['TRID', 'ECOA', 'RESPA']
+            ],
+            'fha_total' => [
+                'name' => 'FHA TOTAL Scorecard',
+                'type' => 'aus',
+                'endpoint' => 'https://api.fhatotal.gov',
+                'required_fields' => ['loan_data'],
+                'compliance' => ['TRID', 'ECOA', 'RESPA']
+            ]
+        ],
+        'closing_services' => [
+            'snapdocs' => [
+                'name' => 'Snapdocs',
+                'type' => 'closing',
+                'endpoint' => 'https://api.snapdocs.com',
+                'required_fields' => ['loan_id', 'closing_date'],
+                'compliance' => ['TRID', 'RESPA']
+            ]
         ]
     ];
 
@@ -221,39 +247,9 @@ class IntegrationService
     }
 
     /**
-
-     * Dispatch a request to a vendor specific client.
-     */
-    public function sendToVendor(string $vendor, string $method, string $endpoint, array $payload = []): array
-    {
-        $vendor = strtolower($vendor);
-        $clientClass = $this->integrationClients[$vendor] ?? null;
-        if (!$clientClass) {
-            return ['success' => false, 'error' => 'Unknown integration vendor'];
-        }
-
-        /** @var BaseIntegrationClient $client */
-        $client = app($clientClass);
-
-        try {
-            $data = $client->request(strtoupper($method), $endpoint, $payload);
-            return ['success' => true, 'data' => $data];
-        } catch (IntegrationException $e) {
-            Log::error('Integration request failed', [
-                'vendor' => $vendor,
-                'endpoint' => $endpoint,
-                'error' => $e->getMessage(),
-                'context' => $e->getContext(),
-            ]);
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
-    }
-
-    /**
-
      * Create integration for tenant.
      */
-    public function createIntegration(int $tenantId, string $provider, array $configuration): Integration
+    public function createIntegration(int $tenantId, string $provider, array $configuration, array $credentials = []): Integration
     {
         $config = $this->getIntegrationConfig($provider);
         if (!$config) {
@@ -265,7 +261,8 @@ class IntegrationService
             'name' => $config['name'],
             'type' => $config['type'],
             'status' => 'inactive',
-            'configuration' => $configuration
+            'configuration' => $configuration,
+            'credentials' => $credentials
         ]);
 
         // Test the integration
@@ -294,7 +291,8 @@ class IntegrationService
             }
 
             $endpoint = $config['endpoint'] . '/test';
-            $response = Http::timeout(30)
+            $response = Http::retry(3, 100)
+                ->timeout(30)
                 ->withHeaders($this->getAuthHeaders($integration))
                 ->get($endpoint);
 
@@ -317,39 +315,14 @@ class IntegrationService
     public function syncWithIntegration(Integration $integration, string $action, array $data): array
     {
         try {
-
-            $providerKey = strtolower(str_replace(' ', '_', $integration->name));
-
-            if (isset($this->integrationClients[$providerKey])) {
-                $result = $this->sendToVendor($providerKey, 'POST', '/' . $action, $data);
-                if ($result['success']) {
-                    $integration->update(['last_sync_at' => now()]);
-                    ComplianceAudit::createAudit(
-                        'integration_sync',
-                        'integration',
-                        $integration->id,
-                        'sync_completed',
-                        null,
-                        ['action' => $action, 'data' => $data],
-                        ['response' => $result['data']]
-                    );
-                } else {
-                    $integration->update([
-                        'status' => 'error',
-                        'error_message' => 'Sync failed: ' . $result['error']
-                    ]);
-                }
-                return $result;
-            }
-
-
             $config = $this->getIntegrationConfig($integration->name);
             if (!$config) {
                 return ['success' => false, 'error' => 'Unknown integration provider'];
             }
 
             $endpoint = $config['endpoint'] . '/' . $action;
-            $response = Http::timeout(60)
+            $response = Http::retry(3, 200)
+                ->timeout(60)
                 ->withHeaders($this->getAuthHeaders($integration))
                 ->post($endpoint, $data);
 
@@ -396,26 +369,32 @@ class IntegrationService
     private function getAuthHeaders(Integration $integration): array
     {
         $config = $integration->configuration;
+        $credentials = $integration->credentials ?? [];
         $headers = ['Content-Type' => 'application/json'];
 
         switch ($integration->name) {
             case 'Experian':
             case 'Equifax':
             case 'TransUnion':
-                $headers['Authorization'] = 'Bearer ' . ($config['api_key'] ?? '');
+                $headers['Authorization'] = 'Bearer ' . ($credentials['api_key'] ?? '');
                 break;
             case 'DocuSign':
-                $headers['Authorization'] = 'Bearer ' . ($config['access_token'] ?? '');
+                $headers['Authorization'] = 'Bearer ' . ($credentials['access_token'] ?? '');
                 break;
             case 'Encompass':
-                $headers['X-Encompass-API-Key'] = $config['api_key'] ?? '';
+                $headers['X-Encompass-API-Key'] = $credentials['api_key'] ?? '';
                 break;
             default:
-                $headers['X-API-Key'] = $config['api_key'] ?? '';
+                $headers['X-API-Key'] = $credentials['api_key'] ?? '';
                 break;
         }
 
         return $headers;
+    }
+
+    public function updateCredentials(Integration $integration, array $credentials): void
+    {
+        $integration->update(['credentials' => $credentials]);
     }
 
     /**
@@ -509,6 +488,120 @@ class IntegrationService
         ];
 
         return $this->syncWithIntegration($integration, 'send-for-signature', $data);
+    }
+
+    /**
+     * Verify borrower assets via VOA provider.
+     */
+    public function verifyAssets(int $loanId, string $provider = 'plaid'): array
+    {
+        $loan = \App\Models\Loan::find($loanId);
+        if (!$loan) {
+            return ['success' => false, 'error' => 'Loan not found'];
+        }
+
+        $integration = Integration::where('tenant_id', $loan->tenant_id)
+            ->where('name', ucfirst($provider))
+            ->where('status', 'active')
+            ->first();
+
+        if (!$integration) {
+            return ['success' => false, 'error' => 'Asset verification integration not configured'];
+        }
+
+        $borrower = $loan->borrower;
+        $data = [
+            'account_id' => $borrower->financial_accounts['primary'] ?? '',
+            'access_token' => $integration->credentials['access_token'] ?? '',
+            'loan_id' => $loan->id
+        ];
+
+        return $this->syncWithIntegration($integration, 'verify-assets', $data);
+    }
+
+    /**
+     * Verify borrower employment via VOE provider.
+     */
+    public function verifyEmployment(int $loanId, string $provider = 'truework'): array
+    {
+        $loan = \App\Models\Loan::find($loanId);
+        if (!$loan) {
+            return ['success' => false, 'error' => 'Loan not found'];
+        }
+
+        $integration = Integration::where('tenant_id', $loan->tenant_id)
+            ->where('name', ucfirst($provider))
+            ->where('status', 'active')
+            ->first();
+
+        if (!$integration) {
+            return ['success' => false, 'error' => 'Employment verification integration not configured'];
+        }
+
+        $borrower = $loan->borrower;
+        $data = [
+            'ssn' => $borrower->ssn,
+            'employer_name' => $borrower->employment_data['employer'] ?? '',
+            'loan_id' => $loan->id
+        ];
+
+        return $this->syncWithIntegration($integration, 'verify-employment', $data);
+    }
+
+    /**
+     * Submit loan to Automated Underwriting System.
+     */
+    public function runAus(int $loanId, string $system = 'desktop_underwriter'): array
+    {
+        $loan = \App\Models\Loan::find($loanId);
+        if (!$loan) {
+            return ['success' => false, 'error' => 'Loan not found'];
+        }
+
+        $integration = Integration::where('tenant_id', $loan->tenant_id)
+            ->where('name', ucwords(str_replace('_', ' ', $system)))
+            ->where('status', 'active')
+            ->first();
+
+        if (!$integration) {
+            return ['success' => false, 'error' => 'AUS integration not configured'];
+        }
+
+        $data = [
+            'loan_data' => $loan->loan_data,
+            'borrower' => $loan->borrower->toArray(),
+            'loan_id' => $loan->id
+        ];
+
+        return $this->syncWithIntegration($integration, 'run-aus', $data);
+    }
+
+    /**
+     * Order closing services.
+     */
+    public function orderClosing(int $loanId, string $provider = 'snapdocs'): array
+    {
+        $loan = \App\Models\Loan::find($loanId);
+        if (!$loan) {
+            return ['success' => false, 'error' => 'Loan not found'];
+        }
+
+        $integration = Integration::where('tenant_id', $loan->tenant_id)
+            ->where('name', ucfirst($provider))
+            ->where('status', 'active')
+            ->first();
+
+        if (!$integration) {
+            return ['success' => false, 'error' => 'Closing service integration not configured'];
+        }
+
+        $data = [
+            'loan_id' => $loan->id,
+            'closing_date' => $loan->closing_date,
+            'property_address' => $loan->loan_data['property_address'] ?? ''
+        ];
+
+        return $this->syncWithIntegration($integration, 'order-closing', $data);
     }
 
     /**
