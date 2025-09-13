@@ -8,9 +8,32 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 
+use App\Services\Integrations\BaseIntegrationClient;
+use App\Services\Integrations\PlaidClient;
+use App\Services\Integrations\TrueworkClient;
+use App\Services\Integrations\DUClient;
+use App\Services\Integrations\LPClient;
+use App\Services\Integrations\FhaTotalClient;
+use App\Services\Integrations\SnapdocsClient;
+use App\Services\Integrations\IntegrationException;
+
+
 class IntegrationService
 {
     /**
+     * Mapping of vendor keys to client classes.
+     */
+    protected array $integrationClients = [
+        'plaid' => PlaidClient::class,
+        'truework' => TrueworkClient::class,
+        'du' => DUClient::class,
+        'lp' => LPClient::class,
+        'fha_total' => FhaTotalClient::class,
+        'snapdocs' => SnapdocsClient::class,
+    ];
+
+    /**
+
      * Available integrations.
      */
     private $integrations = [
@@ -198,6 +221,36 @@ class IntegrationService
     }
 
     /**
+
+     * Dispatch a request to a vendor specific client.
+     */
+    public function sendToVendor(string $vendor, string $method, string $endpoint, array $payload = []): array
+    {
+        $vendor = strtolower($vendor);
+        $clientClass = $this->integrationClients[$vendor] ?? null;
+        if (!$clientClass) {
+            return ['success' => false, 'error' => 'Unknown integration vendor'];
+        }
+
+        /** @var BaseIntegrationClient $client */
+        $client = app($clientClass);
+
+        try {
+            $data = $client->request(strtoupper($method), $endpoint, $payload);
+            return ['success' => true, 'data' => $data];
+        } catch (IntegrationException $e) {
+            Log::error('Integration request failed', [
+                'vendor' => $vendor,
+                'endpoint' => $endpoint,
+                'error' => $e->getMessage(),
+                'context' => $e->getContext(),
+            ]);
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+
      * Create integration for tenant.
      */
     public function createIntegration(int $tenantId, string $provider, array $configuration): Integration
@@ -264,6 +317,32 @@ class IntegrationService
     public function syncWithIntegration(Integration $integration, string $action, array $data): array
     {
         try {
+
+            $providerKey = strtolower(str_replace(' ', '_', $integration->name));
+
+            if (isset($this->integrationClients[$providerKey])) {
+                $result = $this->sendToVendor($providerKey, 'POST', '/' . $action, $data);
+                if ($result['success']) {
+                    $integration->update(['last_sync_at' => now()]);
+                    ComplianceAudit::createAudit(
+                        'integration_sync',
+                        'integration',
+                        $integration->id,
+                        'sync_completed',
+                        null,
+                        ['action' => $action, 'data' => $data],
+                        ['response' => $result['data']]
+                    );
+                } else {
+                    $integration->update([
+                        'status' => 'error',
+                        'error_message' => 'Sync failed: ' . $result['error']
+                    ]);
+                }
+                return $result;
+            }
+
+
             $config = $this->getIntegrationConfig($integration->name);
             if (!$config) {
                 return ['success' => false, 'error' => 'Unknown integration provider'];
