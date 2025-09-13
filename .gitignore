@@ -1,3 +1,9 @@
+
+**/node_modules/
+**/.nuxt/
+**/dist/
+**/.output/
+package-lock.json
 backend/vendor/
 backend/composer.lock
 frontend/node_modules/

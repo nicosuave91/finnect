@@ -11,7 +11,10 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "type-check": "nuxt typecheck",
+    "test": "vitest run --environment jsdom"
     "type-check": "nuxt typecheck"
+
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
@@ -20,6 +23,15 @@
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "axe-core": "^4.7.1",
+    "eslint": "^8.0.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "jsdom": "^22.1.0",
+    "nuxt": "^3.8.0",
+    "typescript": "^5.0.0",
+    "vitest": "^0.34.0",
+    "@vue/test-utils": "^2.4.1",
+    "@vitejs/plugin-vue": "^6.0.0"
     "eslint": "^8.0.0",
     "eslint-plugin-vue": "^9.0.0",
     "nuxt": "^3.8.0",

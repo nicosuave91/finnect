@@ -1,10 +1,14 @@
 <template>
+
+  <div tabindex="-1" @keydown.esc="$emit('close')">
+
   <div>
     <!-- Mobile sidebar overlay -->
     <div
       v-if="isOpen"
       class="fixed inset-0 z-40 lg:hidden"
       @click="$emit('close')"
+      aria-hidden="true"
     >
       <div class="absolute inset-0 bg-gray-600 opacity-75"></div>
     </div>
@@ -35,7 +39,14 @@
         </div>
 
         <!-- Navigation -->
+
+        <nav
+          class="flex-1 px-4 py-6 space-y-1 overflow-y-auto"
+          role="navigation"
+          aria-label="Main navigation"
+        >
         <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+
           <template v-for="item in navigation" :key="item.name">
             <!-- Single item -->
             <NuxtLink
@@ -45,6 +56,9 @@
                 'nav-link',
                 isActive(item.href) ? 'nav-link-active' : 'nav-link-inactive'
               ]"
+
+              :aria-current="isActive(item.href) ? 'page' : undefined"
+
             >
               <Icon :name="item.icon" class="h-5 w-5 mr-3" />
               {{ item.name }}
@@ -61,6 +75,12 @@
                   isActiveGroup(item.children) ? 'nav-link-active' : 'nav-link-inactive'
                 ]"
                 @click="toggleDropdown(item.name)"
+
+                :aria-expanded="openDropdowns.includes(item.name)"
+                :aria-controls="`${item.name}-submenu`"
+                @keydown.enter.prevent="toggleDropdown(item.name)"
+                @keydown.space.prevent="toggleDropdown(item.name)"
+
               >
                 <div class="flex items-center">
                   <Icon :name="item.icon" class="h-5 w-5 mr-3" />
@@ -75,6 +95,10 @@
               <div
                 v-show="openDropdowns.includes(item.name)"
                 class="ml-8 mt-1 space-y-1"
+
+                :id="`${item.name}-submenu`"
+                role="group"
+
               >
                 <NuxtLink
                   v-for="child in item.children"
@@ -115,7 +139,14 @@
             </div>
             <div class="ml-3">
               <Menu as="div" class="relative">
+
+                <MenuButton
+                  class="flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                  aria-label="User menu"
+                >
+
                 <MenuButton class="flex items-center text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+
                   <Icon name="heroicons:ellipsis-vertical" class="h-5 w-5" />
                 </MenuButton>
                 <transition
