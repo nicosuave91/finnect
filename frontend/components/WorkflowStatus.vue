@@ -74,13 +74,15 @@
 </template>
 
 <script setup lang="ts">
+
 import { computed } from 'vue'
 interface WorkflowSummary {
   total_steps: number
   completed_steps: number
   overdue_steps: number
   pending_steps: number
-}
+
+import type { WorkflowSummary } from '~/types'
 
 interface Props {
   summary: WorkflowSummary
@@ -93,4 +95,8 @@ const progressPercentage = computed(() => {
   if (props.summary.total_steps === 0) return 0
   return Math.round((props.summary.completed_steps / props.summary.total_steps) * 100)
 })
+
 </script>
+
+</script>
+

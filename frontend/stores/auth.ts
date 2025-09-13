@@ -246,6 +246,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
+
   const setAuth = (userData: User, authToken: string) => {
     user.value = userData
     token.value = authToken
@@ -276,6 +277,7 @@ export const useAuthStore = defineStore('auth', () => {
     forgotPassword,
     resetPassword,
     setAuth,
+
     clearError
   }
 })
