@@ -12,6 +12,11 @@ use App\Models\Loan;
 use App\Services\ComplianceService;
 use App\Services\WorkflowService;
 
+use App\Services\KafkaService;
+use App\Models\WorkflowEvent;
+
+
+
 #[WorkflowInterface]
 interface LoanProcessingWorkflowInterface
 {
@@ -76,7 +81,11 @@ class LoanProcessingWorkflow implements LoanProcessingWorkflowInterface
     }
 
     #[WorkflowMethod]
+
+    public function processLoan(int $loanId)
+
     public function processLoan(int $loanId): string
+
     {
         try {
             // Step 1: Validate Application
@@ -185,10 +194,16 @@ class LoanProcessingActivity implements LoanProcessingActivityInterface
     private $complianceService;
     private $workflowService;
 
+    private $kafkaService;
+
+
     public function __construct()
     {
         $this->complianceService = app(ComplianceService::class);
         $this->workflowService = app(WorkflowService::class);
+
+        $this->kafkaService = app(KafkaService::class);
+
     }
 
     #[ActivityMethod]
@@ -430,6 +445,18 @@ class LoanProcessingActivity implements LoanProcessingActivityInterface
         $loan = Loan::find($loanId);
         if ($loan) {
             $loan->updateStatus($status, 'Workflow automation');
+
+            $this->workflowService->updateWorkflowForStatus($loan, $status);
+            $this->kafkaService->publish('loan_state_changes', [
+                'loan_id' => $loanId,
+                'status' => $status,
+            ]);
+            WorkflowEvent::create([
+                'loan_id' => $loanId,
+                'status' => $status,
+                'metadata' => ['source' => 'loan_workflow'],
+            ]);
+
         }
     }
 
