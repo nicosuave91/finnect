@@ -1,0 +1,31 @@
+{
+  "TRID": {
+    "name": "TILA-RESPA Integrated Disclosure",
+    "requirements": ["loan_estimate", "closing_disclosure", "intent_to_proceed"]
+  },
+  "ECOA": {
+    "name": "Equal Credit Opportunity Act",
+    "requirements": ["adverse_action_notice", "equal_credit_opportunity_notice"]
+  },
+  "RESPA": {
+    "name": "Real Estate Settlement Procedures Act",
+    "requirements": ["good_faith_estimate", "hud1_settlement_statement", "servicing_disclosure"]
+  },
+  "GLBA": {
+    "name": "Gramm-Leach-Bliley Act",
+    "requirements": ["privacy_notice_provided", "opt_out_mechanism", "data_protection"]
+  },
+  "FCRA": {
+    "name": "Fair Credit Reporting Act",
+    "requirements": ["adverse_action_notice", "risk_based_pricing_notice"]
+  },
+  "AML_BSA": {
+    "name": "Anti-Money Laundering/Bank Secrecy Act",
+    "requirements": ["suspicious_activity_monitoring", "customer_due_diligence"]
+  },
+  "SAFE_ACT": {
+    "name": "Secure and Fair Enforcement Act",
+    "requirements": ["nmls_licensing", "background_checks", "continuing_education"]
+  }
+}
+

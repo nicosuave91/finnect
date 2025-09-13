@@ -1,5 +1,6 @@
 <template>
   <div class="overflow-hidden">
+
     <table class="table" aria-label="Recent loans">
       <thead class="table-header">
         <tr>
@@ -8,11 +9,22 @@
           <th scope="col" class="table-header-cell">Amount</th>
           <th scope="col" class="table-header-cell">Status</th>
           <th scope="col" class="table-header-cell">Date</th>
+
+    <table class="table">
+      <thead class="table-header">
+        <tr>
+          <th class="table-header-cell">Loan Number</th>
+          <th class="table-header-cell">Borrower</th>
+          <th class="table-header-cell">Amount</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell">Date</th>
         </tr>
       </thead>
       <tbody class="table-body">
         <tr v-for="loan in loans" :key="loan.id" class="table-row">
           <th scope="row" class="table-cell font-medium">
+          <td class="table-cell">
+
             <NuxtLink
               :to="`/loans/${loan.id}`"
               class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400"
@@ -20,6 +32,7 @@
               {{ loan.loan_number }}
             </NuxtLink>
           </th>
+          </td>
           <td class="table-cell">
             <div class="flex items-center">
               <div class="h-8 w-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mr-3">

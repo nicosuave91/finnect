@@ -9,7 +9,9 @@
             type="button"
             class="lg:hidden -m-2.5 p-2.5 text-gray-700 dark:text-gray-300"
             @click="$emit('toggle-sidebar')"
+
             aria-label="Open sidebar"
+
           >
             <Icon name="heroicons:bars-3" class="h-6 w-6" />
           </button>
@@ -55,7 +57,9 @@
                 v-model="searchQuery"
                 type="text"
                 placeholder="Search loans, borrowers..."
+
                 aria-label="Search"
+
                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                 @keydown.enter="handleSearch"
               />
@@ -67,9 +71,11 @@
             type="button"
             class="relative p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
             @click="showNotifications = !showNotifications"
+
             aria-label="Notifications"
             :aria-expanded="showNotifications"
             aria-controls="notification-panel"
+
           >
             <Icon name="heroicons:bell" class="h-6 w-6" />
             <span
@@ -82,10 +88,14 @@
 
           <!-- Tenant switcher -->
           <Menu v-if="tenantStore.isMultiTenant" as="div" class="relative">
+
             <MenuButton
               class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               aria-label="Tenant menu"
             >
+
+            <MenuButton class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+
               <div class="h-8 w-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center mr-2">
                 <Icon name="heroicons:building-office" class="h-5 w-5 text-primary-600 dark:text-primary-400" />
               </div>
@@ -143,10 +153,13 @@
 
           <!-- User menu -->
           <Menu as="div" class="relative">
+
             <MenuButton
               class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               aria-label="User menu"
             >
+
+            <MenuButton class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
               <div class="h-8 w-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mr-2">
                 <span class="text-sm font-medium text-primary-600 dark:text-primary-400">
                   {{ authStore.userInitials }}
@@ -202,6 +215,7 @@
       id="notification-panel"
       role="region"
       aria-label="Notifications"
+
     >
       <div class="p-4 border-b border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Notifications</h3>
