@@ -1,0 +1,643 @@
+openapi: 3.0.3
+info:
+  title: Finnect API
+  version: 1.0.0
+servers:
+  - url: https://api.finnect.com/v1
+  - url: http://localhost:8000/api
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+    Loan:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Borrower:
+      type: object
+      properties:
+        id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              order:
+                type: integer
+    ComplianceReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        generated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+    Integration:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                remember:
+                  type: boolean
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+  /auth/register:
+    post:
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [first_name, last_name, email, password, password_confirmation]
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+                nmls_id:
+                  type: string
+      responses:
+        '201':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+  /auth/logout:
+    post:
+      summary: Logout user
+      responses:
+        '204':
+          description: Logged out
+  /auth/me:
+    get:
+      summary: Current user profile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+  /loans:
+    get:
+      summary: List loans
+      responses:
+        '200':
+          description: Loan collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Loan'
+    post:
+      summary: Create loan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Loan'
+      responses:
+        '201':
+          description: Loan created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Loan'
+  /loans/{loan}:
+    get:
+      summary: Get loan
+      parameters:
+        - in: path
+          name: loan
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Loan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Loan'
+    put:
+      summary: Update loan
+      parameters:
+        - in: path
+          name: loan
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Loan'
+      responses:
+        '200':
+          description: Loan updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Loan'
+    delete:
+      summary: Delete loan
+      parameters:
+        - in: path
+          name: loan
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+  /loans/{loan}/status:
+    post:
+      summary: Update loan status
+      parameters:
+        - in: path
+          name: loan
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+  /loans/{loan}/compliance-check:
+    post:
+      summary: Run compliance check
+      parameters:
+        - in: path
+          name: loan
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Compliance results
+  /borrowers:
+    get:
+      summary: List borrowers
+      responses:
+        '200':
+          description: Borrower collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Borrower'
+    post:
+      summary: Create borrower
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Borrower'
+      responses:
+        '201':
+          description: Borrower created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Borrower'
+  /borrowers/{borrower}:
+    get:
+      summary: Get borrower
+      parameters:
+        - in: path
+          name: borrower
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Borrower
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Borrower'
+    put:
+      summary: Update borrower
+      parameters:
+        - in: path
+          name: borrower
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Borrower'
+      responses:
+        '200':
+          description: Borrower updated
+    delete:
+      summary: Delete borrower
+      parameters:
+        - in: path
+          name: borrower
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+  /borrowers/{borrower}/verify-identity:
+    post:
+      summary: Verify borrower identity
+      parameters:
+        - in: path
+          name: borrower
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Verification result
+  /borrowers/{borrower}/credit-report:
+    get:
+      summary: Get borrower credit report
+      parameters:
+        - in: path
+          name: borrower
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Credit report
+  /workflows:
+    get:
+      summary: List workflows
+      responses:
+        '200':
+          description: Workflow collection
+    post:
+      summary: Create workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Workflow'
+      responses:
+        '201':
+          description: Workflow created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workflow'
+  /workflows/{workflow}:
+    get:
+      summary: Get workflow
+      parameters:
+        - in: path
+          name: workflow
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Workflow
+    put:
+      summary: Update workflow
+      parameters:
+        - in: path
+          name: workflow
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Workflow'
+      responses:
+        '200':
+          description: Workflow updated
+    delete:
+      summary: Delete workflow
+      parameters:
+        - in: path
+          name: workflow
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+  /workflows/{workflow}/steps:
+    post:
+      summary: Add workflow step
+      parameters:
+        - in: path
+          name: workflow
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, order]
+              properties:
+                name:
+                  type: string
+                order:
+                  type: integer
+      responses:
+        '201':
+          description: Step added
+  /workflows/{workflow}/steps/{step}:
+    put:
+      summary: Update workflow step
+      parameters:
+        - in: path
+          name: workflow
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: step
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                order:
+                  type: integer
+      responses:
+        '200':
+          description: Step updated
+    delete:
+      summary: Remove workflow step
+      parameters:
+        - in: path
+          name: workflow
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: step
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+  /compliance/regulations:
+    get:
+      summary: List regulations
+      responses:
+        '200':
+          description: Regulation collection
+  /compliance/violations:
+    get:
+      summary: List compliance violations
+      responses:
+        '200':
+          description: Violation collection
+  /compliance/audit-trail:
+    get:
+      summary: Compliance audit trail
+      responses:
+        '200':
+          description: Audit trail entries
+  /compliance/reports:
+    post:
+      summary: Generate compliance report
+      responses:
+        '201':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ComplianceReport'
+  /compliance/reports/{report}/download:
+    get:
+      summary: Download compliance report
+      parameters:
+        - in: path
+          name: report
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Report file
+  /integrations:
+    get:
+      summary: List integrations
+      responses:
+        '200':
+          description: Integration collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Integration'
+  /integrations/{integration}/status:
+    get:
+      summary: Get integration status
+      parameters:
+        - in: path
+          name: integration
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Integration status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Integration'
+  /integrations/{integration}/sync:
+    post:
+      summary: Sync integration
+      parameters:
+        - in: path
+          name: integration
+          required: true
+          schema:
+            type: integer
+      responses:
+        '202':
+          description: Sync started
+  /integrations/{integration}/logs:
+    get:
+      summary: Get integration logs
+      parameters:
+        - in: path
+          name: integration
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Log entries

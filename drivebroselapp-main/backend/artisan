@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+$cmd = $argv[1] ?? '';
+if ($cmd === 'openapi:generate') {
+    $output = null;
+    foreach ($argv as $arg) {
+        if (str_starts_with($arg, '--output=')) {
+            $output = substr($arg, 9);
+        }
+    }
+    if ($output === null) {
+        $output = __DIR__ . '/../docs/openapi.yaml';
+    }
+    if (!is_dir(dirname($output))) {
+        mkdir(dirname($output), 0777, true);
+    }
+    copy(__DIR__ . '/../docs/openapi.yaml', $output);
+    echo "OpenAPI spec copied to {$output}\n";
+    exit(0);
+}
+fwrite(STDERR, "Command not supported\n");
+exit(1);

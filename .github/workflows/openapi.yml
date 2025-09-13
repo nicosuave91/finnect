@@ -1,0 +1,26 @@
+name: OpenAPI Spec
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: Install dependencies
+        run: |
+          cd drivebroselapp-main/backend
+          composer install --no-interaction --prefer-dist
+      - name: Generate OpenAPI spec
+        run: |
+          cd drivebroselapp-main/backend
+          php artisan openapi:generate --output=../docs/openapi.yaml
+      - name: Show spec summary
+        run: |
+          head -n 20 drivebroselapp-main/docs/openapi.yaml
