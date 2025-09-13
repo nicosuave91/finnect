@@ -10,9 +10,7 @@ use App\Services\WorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
-
-use Illuminate\Support\Facades\Redis;
-
+use Illuminate\Support\Facades\Auth;
 
 class LoanController extends Controller
 {
@@ -21,6 +19,7 @@ class LoanController extends Controller
 
     public function __construct(ComplianceService $complianceService, WorkflowService $workflowService)
     {
+        $this->middleware('auth:sanctum');
         $this->complianceService = $complianceService;
         $this->workflowService = $workflowService;
     }
@@ -30,6 +29,11 @@ class LoanController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'loan_officer', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $query = Loan::with(['borrower', 'coBorrower', 'loanOfficer']);
 
         // Apply filters
@@ -70,6 +74,11 @@ class LoanController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'loan_officer'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $validated = $request->validate([
             'borrower_id' => 'required|exists:borrowers,id',
             'co_borrower_id' => 'nullable|exists:borrowers,id',
@@ -109,6 +118,11 @@ class LoanController extends Controller
      */
     public function show(Loan $loan): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'loan_officer', 'underwriter', 'investor'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $loan->load(['borrower', 'coBorrower', 'loanOfficer', 'workflowSteps']);
         
         $complianceSummary = $this->complianceService->getComplianceSummary($loan);
@@ -124,6 +138,11 @@ class LoanController extends Controller
      */
     public function update(Request $request, Loan $loan): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'loan_officer'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $validated = $request->validate([
             'loan_amount' => 'sometimes|numeric|min:0',
             'interest_rate' => 'nullable|numeric|min:0|max:100',
@@ -153,6 +172,11 @@ class LoanController extends Controller
      */
     public function destroy(Loan $loan): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin'])) {
+            abort(403, 'Unauthorized');
+        }
+
         // Only allow deletion of loans in application status
         if ($loan->status !== 'application') {
             return response()->json(['error' => 'Cannot delete loan in current status'], 400);
@@ -168,6 +192,11 @@ class LoanController extends Controller
      */
     public function updateStatus(Request $request, Loan $loan): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $validated = $request->validate([
             'status' => 'required|string|in:application,processing,underwriting,approved,denied,closed,funded',
             'reason' => 'nullable|string|max:1000',
@@ -178,14 +207,6 @@ class LoanController extends Controller
         // Update workflow if needed
         $this->workflowService->updateWorkflowForStatus($loan, $validated['status']);
 
-
-        // Broadcast status change
-        Redis::publish('loan-status', json_encode([
-            'loan_id' => $loan->id,
-            'status' => $validated['status'],
-        ]));
-
-
         return response()->json([
             'loan' => $loan->fresh(),
             'message' => 'Status updated successfully',
@@ -193,33 +214,15 @@ class LoanController extends Controller
     }
 
     /**
-
-     * Stream loan status events via Server-Sent Events.
-     */
-    public function stream()
-    {
-        return response()->stream(function () {
-            Redis::subscribe(['loan-status'], function ($message) {
-                echo "event: loan-status\n";
-                echo "data: {$message}\n\n";
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
-                flush();
-            });
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'Connection' => 'keep-alive',
-        ]);
-    }
-
-    /**
-
      * Run compliance check for loan.
      */
     public function runComplianceCheck(Loan $loan): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $violations = $this->complianceService->runComplianceCheck($loan);
         $summary = $this->complianceService->getComplianceSummary($loan);
 
@@ -234,6 +237,11 @@ class LoanController extends Controller
      */
     public function getAuditTrail(Loan $loan): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $auditTrail = $loan->complianceAudits()
             ->with('user')
             ->orderBy('created_at', 'desc')
@@ -247,6 +255,11 @@ class LoanController extends Controller
      */
     public function getWorkflow(Loan $loan): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'loan_officer', 'underwriter'])) {
+            abort(403, 'Unauthorized');
+        }
+
         $workflowSteps = $loan->workflowSteps()
             ->with(['assignedUser', 'completedByUser'])
             ->orderBy('step_order')
@@ -255,6 +268,27 @@ class LoanController extends Controller
         return response()->json([
             'workflow_steps' => $workflowSteps,
             'current_step' => $loan->getCurrentWorkflowStep(),
+        ]);
+    }
+
+    /**
+     * Stream loan updates using Server-Sent Events.
+     */
+    public function stream(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasAnyRole(['admin', 'loan_officer', 'underwriter', 'investor'])) {
+            abort(403, 'Unauthorized');
+        }
+
+        return response()->stream(function () {
+            echo "data: {\"status\": \"connected\"}\n\n";
+            ob_flush();
+            flush();
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
         ]);
     }
 

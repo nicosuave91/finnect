@@ -37,13 +37,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'compliance'])->group(function () {
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
     // Loan management routes
-
-    Route::get('/loans/stream', [LoanController::class, 'stream']);
     Route::apiResource('loans', LoanController::class);
     Route::post('/loans/{loan}/status', [LoanController::class, 'updateStatus']);
     Route::post('/loans/{loan}/compliance-check', [LoanController::class, 'runComplianceCheck']);
     Route::get('/loans/{loan}/audit-trail', [LoanController::class, 'getAuditTrail']);
     Route::get('/loans/{loan}/workflow', [LoanController::class, 'getWorkflow']);
+    Route::get('/loans/stream/events', [LoanController::class, 'stream']);
 
     // Borrower management routes
     Route::apiResource('borrowers', BorrowerController::class);

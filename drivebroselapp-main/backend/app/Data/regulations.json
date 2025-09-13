@@ -1,0 +1,139 @@
+{
+  "TRID": {
+    "name": "TRID (TILA-RESPA Integrated Disclosure)",
+    "description": "Truth in Lending Act and Real Estate Settlement Procedures Act integrated disclosure rule",
+    "rules": {
+      "loan_estimate": {
+        "description": "Loan Estimate must be provided within 3 business days of application",
+        "severity": "high",
+        "remediation": "Issue Loan Estimate within required timeframe"
+      },
+      "closing_disclosure": {
+        "description": "Closing Disclosure must be provided 3 business days before closing",
+        "severity": "high",
+        "remediation": "Deliver Closing Disclosure and wait 3 business days before closing"
+      },
+      "intent_to_proceed": {
+        "description": "Intent to Proceed must be obtained before charging fees",
+        "severity": "high",
+        "remediation": "Obtain documented intent to proceed before charging fees"
+      }
+    }
+  },
+  "ECOA": {
+    "name": "ECOA (Equal Credit Opportunity Act)",
+    "description": "Prohibits discrimination in credit transactions",
+    "rules": {
+      "adverse_action_notice": {
+        "description": "Adverse Action Notice required for denials",
+        "severity": "high",
+        "remediation": "Provide required adverse action notice to applicant"
+      },
+      "equal_credit_opportunity_notice": {
+        "description": "Equal Credit Opportunity Notice required",
+        "severity": "high",
+        "remediation": "Supply Equal Credit Opportunity notice to applicant"
+      },
+      "marital_status": {
+        "description": "Marital status cannot be used for credit decisions",
+        "severity": "critical",
+        "remediation": "Remove marital status from underwriting considerations"
+      },
+      "race": {
+        "description": "Race cannot be used for credit decisions",
+        "severity": "critical",
+        "remediation": "Eliminate race from credit decision data"
+      },
+      "religion": {
+        "description": "Religion cannot be used for credit decisions",
+        "severity": "critical",
+        "remediation": "Exclude religion from credit decision data"
+      }
+    }
+  },
+  "RESPA": {
+    "name": "RESPA (Real Estate Settlement Procedures Act)",
+    "description": "Regulates real estate settlement services",
+    "rules": {
+      "good_faith_estimate": {
+        "description": "Good Faith Estimate required",
+        "severity": "high",
+        "remediation": "Provide Good Faith Estimate to borrower"
+      },
+      "hud1_settlement_statement": {
+        "description": "HUD-1 Settlement Statement required",
+        "severity": "high",
+        "remediation": "Deliver HUD-1 Settlement Statement"
+      },
+      "servicing_disclosure": {
+        "description": "Servicing Disclosure required",
+        "severity": "high",
+        "remediation": "Issue Servicing Disclosure"
+      },
+      "referral_fees": {
+        "description": "Referral fees may violate RESPA kickback prohibitions",
+        "severity": "critical",
+        "remediation": "Cease referral fee arrangements"
+      }
+    }
+  },
+  "GLBA": {
+    "name": "GLBA (Gramm-Leach-Bliley Act)",
+    "description": "Protects consumer financial information",
+    "rules": {
+      "privacy_notice_provided": {
+        "description": "Privacy notice must be provided to customers",
+        "severity": "high",
+        "remediation": "Distribute required privacy notice"
+      },
+      "opt_out_mechanism": {
+        "description": "Opt-out mechanism must be provided for information sharing",
+        "severity": "high",
+        "remediation": "Offer opt-out mechanism for information sharing"
+      }
+    }
+  },
+  "FCRA": {
+    "name": "FCRA (Fair Credit Reporting Act)",
+    "description": "Regulates consumer credit reporting",
+    "rules": {
+      "adverse_action_notice": {
+        "description": "Adverse Action Notice required for credit denials",
+        "severity": "high",
+        "remediation": "Provide adverse action notice to consumer"
+      },
+      "risk_based_pricing_notice": {
+        "description": "Risk-Based Pricing Notice required",
+        "severity": "high",
+        "remediation": "Send risk-based pricing notice when applicable"
+      }
+    }
+  },
+  "AML_BSA": {
+    "name": "AML/BSA (Anti-Money Laundering/Bank Secrecy Act)",
+    "description": "Prevents money laundering and terrorist financing",
+    "rules": {
+      "suspicious_activity_reviewed": {
+        "description": "Suspicious activity must be reviewed for AML compliance",
+        "severity": "high",
+        "remediation": "Review and report suspicious activity"
+      },
+      "customer_due_diligence": {
+        "description": "Customer Due Diligence must be performed",
+        "severity": "high",
+        "remediation": "Perform and document customer due diligence"
+      }
+    }
+  },
+  "SAFE_ACT": {
+    "name": "SAFE Act (Secure and Fair Enforcement)",
+    "description": "Regulates mortgage loan originators",
+    "rules": {
+      "unlicensed_originator": {
+        "description": "Loan originator must be licensed under SAFE Act",
+        "severity": "critical",
+        "remediation": "Ensure loan originator obtains and maintains required licensing"
+      }
+    }
+  }
+}
