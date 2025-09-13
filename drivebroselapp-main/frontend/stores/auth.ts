@@ -47,6 +47,8 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true
       error.value = null
 
+      const { data } = await $fetch<{ data: { user: User; token: string } }>('/api/auth/login', {
+
 
       const response = await $fetch<{ user: User; token: string }>('/api/auth/login', {
 
@@ -56,6 +58,8 @@ export const useAuthStore = defineStore('auth', () => {
         body: credentials
       })
 
+      user.value = data.user
+      token.value = data.token
 
       user.value = response.user
       token.value = response.token
@@ -71,11 +75,13 @@ export const useAuthStore = defineStore('auth', () => {
         sameSite: 'strict'
       })
 
+
       authCookie.value = response.token
 
       // Set default headers
       const { $api } = useNuxtApp()
       $api.setAuthToken(response.token)
+
 
       authCookie.value = data.token
 
@@ -98,6 +104,8 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true
       error.value = null
 
+      const response = await $fetch<{ data: { user: User; token: string } }>('/api/auth/register', {
+
 
       const response = await $fetch<{ user: User; token: string }>('/api/auth/register', {
 
@@ -107,6 +115,8 @@ export const useAuthStore = defineStore('auth', () => {
         body: data
       })
 
+      user.value = response.data.user
+      token.value = response.data.token
 
       user.value = response.user
       token.value = response.token
@@ -114,13 +124,13 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.data.user
       token.value = response.data.token
 
-
       // Set cookie
       const authCookie = useCookie('auth_token', {
         maxAge: 60 * 60 * 24 * 7, // 7 days
         secure: true,
         sameSite: 'strict'
       })
+
 
       authCookie.value = response.token
 
@@ -179,6 +189,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       if (!token.value) return
 
+      const { data } = await $fetch<{ data: User }>('/api/auth/me', {
+
 
       const response = await $fetch<{ user: User }>('/api/auth/me', {
 
@@ -188,6 +200,8 @@ export const useAuthStore = defineStore('auth', () => {
           Authorization: `Bearer ${token.value}`
         }
       })
+
+      user.value = data
 
 
       user.value = response.user
@@ -205,6 +219,8 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true
       error.value = null
 
+      const { data } = await $fetch<{ data: User }>('/api/auth/profile', {
+
 
       const response = await $fetch<{ user: User }>('/api/auth/profile', {
 
@@ -216,6 +232,7 @@ export const useAuthStore = defineStore('auth', () => {
         },
         body: profileData
       })
+
 
       user.value = response.user
 

@@ -11,11 +11,8 @@ use Temporal\Workflow\ContinueAsNew;
 use App\Models\Loan;
 use App\Services\ComplianceService;
 use App\Services\WorkflowService;
-
 use App\Services\KafkaService;
 use App\Models\WorkflowEvent;
-
-
 
 #[WorkflowInterface]
 interface LoanProcessingWorkflowInterface
@@ -81,6 +78,8 @@ class LoanProcessingWorkflow implements LoanProcessingWorkflowInterface
     }
 
     #[WorkflowMethod]
+
+    public function processLoan(int $loanId): string
 
     public function processLoan(int $loanId)
 
@@ -196,11 +195,11 @@ class LoanProcessingActivity implements LoanProcessingActivityInterface
 
     private $kafkaService;
 
-
     public function __construct()
     {
         $this->complianceService = app(ComplianceService::class);
         $this->workflowService = app(WorkflowService::class);
+
 
         $this->kafkaService = app(KafkaService::class);
 
@@ -456,6 +455,7 @@ class LoanProcessingActivity implements LoanProcessingActivityInterface
                 'status' => $status,
                 'metadata' => ['source' => 'loan_workflow'],
             ]);
+
 
         }
     }

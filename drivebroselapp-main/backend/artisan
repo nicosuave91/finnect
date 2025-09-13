@@ -15,7 +15,26 @@ define('LARAVEL_START', microtime(true));
 |
 */
 
+
+/**
+ * Require the Composer autoloader if it exists.
+ */
+function requireVendorAutoload(): void
+{
+    $autoloadPath = __DIR__ . '/vendor/autoload.php';
+
+    if (!file_exists($autoloadPath)) {
+        fwrite(STDERR, "Missing vendor/autoload.php. Run 'composer install' before executing artisan.\n");
+        exit(1);
+    }
+
+    require $autoloadPath;
+}
+
+requireVendorAutoload();
+
 require __DIR__.'/vendor/autoload.php';
+
 
 $app = require_once __DIR__.'/bootstrap/app.php';
 

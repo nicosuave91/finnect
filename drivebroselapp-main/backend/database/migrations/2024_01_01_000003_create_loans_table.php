@@ -3,9 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
 use Illuminate\Support\Facades\DB;
 use App\Support\TenantMigrate;
+
 
 
 return new class extends Migration
@@ -59,10 +59,12 @@ return new class extends Migration
     public function down(): void
     {
 
+
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('DROP POLICY IF EXISTS tenant_isolation ON loans;');
             DB::statement('ALTER TABLE loans DISABLE ROW LEVEL SECURITY;');
         }
+
 
         Schema::dropIfExists('loans');
     }
