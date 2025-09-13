@@ -3,6 +3,10 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+use App\Support\TenantMigrate;
+
+
 
 return new class extends Migration
 {
@@ -39,6 +43,14 @@ return new class extends Migration
             $table->index(['tenant_id', 'loan_officer_id']);
             $table->index(['tenant_id', 'application_date']);
         });
+
+
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE loans ENABLE ROW LEVEL SECURITY;');
+            DB::statement("CREATE POLICY tenant_isolation ON loans USING (tenant_id = current_setting('app.tenant_id')::bigint);");
+            TenantMigrate::run('loans');
+        }
+
     }
 
     /**
@@ -46,6 +58,14 @@ return new class extends Migration
      */
     public function down(): void
     {
+
+
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('DROP POLICY IF EXISTS tenant_isolation ON loans;');
+            DB::statement('ALTER TABLE loans DISABLE ROW LEVEL SECURITY;');
+        }
+
+
         Schema::dropIfExists('loans');
     }
 };
